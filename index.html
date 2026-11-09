@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desafio das Equações</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#151d32; --accent:#7c9cff; --green:#35d39a; --red:#ff6b7a; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px; font-family:system-ui,-apple-system,Segoe UI,sans-serif; color:#f4f7ff; background:radial-gradient(circle at top,#1b2a4b,var(--bg) 55%); }
+    .game { width:min(100%,620px); background:rgba(21,29,50,.95); border:1px solid #2b3858; border-radius:24px; padding:clamp(22px,5vw,38px); box-shadow:0 24px 80px #0005; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:26px; }
+    .brand { font-weight:800; letter-spacing:.04em; color:var(--accent); }
+    .score { background:#222e49; padding:8px 14px; border-radius:999px; font-size:.9rem; }
+    .progress { height:7px; background:#29344e; border-radius:99px; overflow:hidden; margin-bottom:28px; }
+    .progress span { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--green)); transition:width .25s; }
+    .eyebrow { color:#aab8d6; font-size:.9rem; text-align:center; margin:0 0 10px; }
+    h1 { text-align:center; font-size:clamp(1.7rem,5vw,2.4rem); margin:0 0 8px; }
+    .subtitle { text-align:center; color:#aab8d6; margin:0 0 28px; }
+    .equation { display:grid; place-items:center; min-height:130px; padding:24px 12px; background:#0d1426; border:1px solid #2c3a5c; border-radius:18px; font-size:clamp(2rem,8vw,3.2rem); font-weight:750; letter-spacing:.02em; margin-bottom:24px; }
+    .answers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    button { font:inherit; cursor:pointer; border:1px solid #344363; background:#202b45; color:#f4f7ff; border-radius:14px; padding:17px 12px; font-size:1.25rem; font-weight:650; transition:transform .15s,border-color .15s,background .15s; }
+    button:hover:not(:disabled) { transform:translateY(-2px); border-color:var(--accent); background:#2a3858; }
+    button:disabled { cursor:default; opacity:.8; }
+    button.correct { background:#123d34; border-color:var(--green); color:#8ff5ce; }
+    button.wrong { background:#4a202b; border-color:var(--red); color:#ffb3bd; }
+    .feedback { min-height:28px; text-align:center; margin:18px 0 0; font-weight:650; }
+    .feedback.good { color:var(--green); } .feedback.bad { color:var(--red); }
+    .footer { text-align:center; color:#8d9bb8; font-size:.82rem; margin-top:20px; }
+    @media(max-width:420px){ .answers{grid-template-columns:1fr;} button{padding:14px;} }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header><div class="brand">∑ DESAFIO MATEMÁTICO</div><div class="score">Pontos: <strong id="score">0</strong></div></header>
+    <div class="progress"><span id="progress"></span></div>
+    <p class="eyebrow" id="round">QUESTÃO 1</p>
+    <h1>Qual é o valor de x?</h1>
+    <p class="subtitle">Resolva a equação e escolha uma das alternativas.</p>
+    <div class="equation" id="equation">2x + 4 = 14</div>
+    <div class="answers" id="answers"></div>
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+    <div class="footer">A resposta correta leva você para a próxima equação.</div>
+  </main>
+<script>
+  const equationEl = document.getElementById('equation');
+  const answersEl = document.getElementById('answers');
+  const feedbackEl = document.getElementById('feedback');
+  const scoreEl = document.getElementById('score');
+  const roundEl = document.getElementById('round');
+  const progressEl = document.getElementById('progress');
+  let score = 0, round = 1, answer = 0, locked = false;
+
+  const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+  function makeQuestion() {
+    // Gera uma equação linear ax + b = c, com solução inteira.
+    const a = rand(2,9), x = rand(-10,15), b = rand(-12,12), c = a*x+b;
+    answer = x;
+    const bText = b === 0 ? '' : b > 0 ? ' + ' + b : ' − ' + Math.abs(b);
+    equationEl.textContent = a + 'x' + bText + ' = ' + c;
+    const choices = new Set([answer]);
+    while(choices.size < 4) choices.add(answer + rand(-10,10) || answer+1);
+    const options = [...choices].sort(()=>Math.random()-.5);
+    answersEl.innerHTML = '';
+    options.forEach(value => {
+      const button = document.createElement('button');
+      button.textContent = 'x = ' + value;
+      button.addEventListener('click',()=>choose(value,button));
+      answersEl.appendChild(button);
+    });
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    locked = false;
+    roundEl.textContent = 'QUESTÃO ' + round;
+    progressEl.style.width = Math.min((round%10)*10,100) + '%';
+  }
+  function choose(value,button) {
+    if(locked) return;
+    if(value === answer) {
+      locked = true; score++; scoreEl.textContent = score;
+      button.classList.add('correct');
+      feedbackEl.textContent = 'Correto! Muito bem 🎉';
+      feedbackEl.className = 'feedback good';
+      answersEl.querySelectorAll('button').forEach(b=>b.disabled=true);
+      setTimeout(()=>{round++;makeQuestion();},650);
+    } else {
+      button.classList.add('wrong');
+      button.disabled = true;
+      feedbackEl.textContent = 'Não foi dessa vez. Tente outra alternativa!';
+      feedbackEl.className = 'feedback bad';
+    }
+  }
+  makeQuestion();
+</script>
+</body>
+</html>
