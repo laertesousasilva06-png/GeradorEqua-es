@@ -1,0 +1,9 @@
+{
+  "appId": "com.voltex.math",
+  "appName": "Voltex Math",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#080b0c"
+  }
+}
